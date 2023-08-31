@@ -1,4 +1,6 @@
+import httpx
 import logging
+import monobank
 from telegram import Update
 from telegram.ext import (
     filters,
@@ -13,46 +15,45 @@ logging.basicConfig(
 )
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, text="I'm a bot, please talk to me!"
-    )
+async def OnJar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if (
+        update.message is None
+        or update.message.text is None
+        or update.effective_chat is None
+    ):
+        return
 
+    _, jar_uri, price, num_people = update.message.text.split()
 
-async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, text=update.message.text
-    )
+    short_jar_id = monobank.GetShortIdFromJarUri(jar_uri)
+    long_jar_id = monobank.FetchLongJarId(short_jar_id)
+    jar_amount = monobank.FetchJarAmount(long_jar_id)
 
-
-async def caps(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text_caps = " ".join(context.args).upper()
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=text_caps)
-
-
-async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="Sorry, I didn't understand that command.",
+        text=str(jar_amount),
     )
 
 
-if __name__ == "__main__":
+async def OnUnknownCommand(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat is None:
+        return
+
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Unknown command. Supported commands: /jar JAR_URI PRICE NUM_PEOPLE",
+    )
+
+
+def main():
     token_file = open("token.txt", "r")
     token = token_file.read()
 
     application = ApplicationBuilder().token(token).build()
-
-    start_handler = CommandHandler("start", start)
-    application.add_handler(start_handler)
-
-    echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
-    application.add_handler(echo_handler)
-
-    caps_handler = CommandHandler("caps", caps)
-    application.add_handler(caps_handler)
-
-    unknown_handler = MessageHandler(filters.COMMAND, unknown)
-    application.add_handler(unknown_handler)
-
+    application.add_handler(CommandHandler("jar", OnJar))
+    application.add_handler(MessageHandler(filters.COMMAND, OnUnknownCommand))
     application.run_polling()
+
+
+if __name__ == "__main__":
+    main()
