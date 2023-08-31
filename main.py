@@ -1,4 +1,3 @@
-import httpx
 import logging
 import monobank
 from telegram import Update
@@ -7,7 +6,6 @@ from telegram.ext import (
     MessageHandler,
     ApplicationBuilder,
     CommandHandler,
-    ContextTypes,
 )
 
 logging.basicConfig(
@@ -15,7 +13,7 @@ logging.basicConfig(
 )
 
 
-async def OnJar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def OnJar(update: Update, _):
     if (
         update.message is None
         or update.message.text is None
@@ -29,19 +27,15 @@ async def OnJar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     long_jar_id = monobank.FetchLongJarId(short_jar_id)
     jar_amount = monobank.FetchJarAmount(long_jar_id)
 
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=str(jar_amount),
-    )
+    await update.message.reply_text(str(jar_amount))
 
 
-async def OnUnknownCommand(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_chat is None:
+async def OnUnknownCommand(update: Update, _):
+    if update.message is None:
         return
 
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text="Unknown command. Supported commands: /jar JAR_URI PRICE NUM_PEOPLE",
+    await update.message.reply_text(
+        "Unknown command. Supported commands: /jar JAR_URI PRICE NUM_PEOPLE"
     )
 
 

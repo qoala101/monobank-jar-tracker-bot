@@ -7,7 +7,11 @@ def GetShortIdFromJarUri(jar_uri: str):
 
 
 def FetchLongJarId(short_jar_id: str):
-    request_json = {"c": "hello", "clientId": short_jar_id, "Pc": "0"}
+    request_json = {
+        "c": "hello",
+        "clientId": short_jar_id,
+        "Pc": "0",
+    }
     response = httpx.post(url="https://send.monobank.ua/api/handler", json=request_json)
     response_json = response.json()
     return response_json["extJarId"]
